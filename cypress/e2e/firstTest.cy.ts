@@ -1,5 +1,7 @@
 ///<reference types="cypress"/>
 
+import { should } from "chai"
+
 describe('our first suite', () => {
 
   it('first test', () => {
@@ -147,7 +149,7 @@ describe('our first suite', () => {
     cy.get('[type="checkbox"]').eq(1).check({ force: true })
   })
 
-  it.only('lists and dropdowns', () => {
+  it('lists and dropdowns', () => {
     cy.visit('/')
     // 1 - verifying one item of the dropdown 
     cy.get('nav nb-select').click()
@@ -174,5 +176,55 @@ describe('our first suite', () => {
         index < 3 && cy.wrap(dropdown).click()
       })
     })
+  })
+
+  it.only('web tables', () => {
+    cy.visit('/')
+    cy.contains('Tables & Data').click()
+    cy.contains('Smart Table').click()
+    
+    // 1. Editing the Age column:
+    cy.get('tbody').contains('tr', 'Larry').then(tableRow => {
+      cy.wrap(tableRow).find('.nb-edit').click()
+      // cy.wrap(tableRow).find('input-editor').eq(5).click(), or 
+      cy.wrap(tableRow).find('[placeholder="Age"]').clear().type('25')
+      cy.wrap(tableRow).find('.nb-checkmark').click()
+
+      cy.wrap(tableRow).find('td:nth-child(7)').should('contain', '25')
+      // or
+      cy.wrap(tableRow).find('td').eq(6).should('contain', '25')
+    })
+
+    // 2. Adding a new row:
+    cy.get('.nb-plus').click()
+    cy.get('thead').find('tr').eq(2).then(tableRow => {
+      cy.wrap(tableRow).find('[placeholder="First Name"]').type('Artem')
+      cy.wrap(tableRow).find('[placeholder="Last Name"]').type('Bondar')
+      cy.wrap(tableRow).find('.nb-checkmark').click()
+    })
+
+    cy.get('tbody').find('tr').eq(0).find('td').eq(2).should('contain', 'Artem')
+    cy.get('tbody').find('tr').eq(0).find('td').eq(3).should('contain', 'Bondar')
+    // or
+    cy.get('tbody tr').first().find('td').then(tableColumns => {
+      cy.wrap(tableColumns).eq(2).should('contain', 'Artem')
+      cy.wrap(tableColumns).eq(3).should('contain', 'Bondar')
+    })
+
+    // 3. Filtering by different ages:
+    const ages = ['20', '30', '40', '200']
+    
+    ages.forEach(age => {
+      cy.get('thead [placeholder="Age"]').clear().type(age)
+      cy.wait(500)
+      cy.get('tbody tr').each(tableRow => {
+        if (age === '200') {
+          cy.wrap(tableRow).should('contain', 'No data found')
+        } else {
+          cy.wrap(tableRow).find('td').eq(6).should('contain', age)
+        }
+      })
+    })
+
   })
 })
